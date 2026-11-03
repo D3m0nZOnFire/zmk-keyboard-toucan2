@@ -2,10 +2,11 @@
 #include <dt-bindings/input/input-event-codes.h>
 #include <dt-bindings/zmk/input_transform.h>
 #include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/pointing.h>
 #include <dt-bindings/zmk/matrix_transform.h>
 #include <physical_layouts.dtsi>
 
-//#define TOUCAN_WIN_MODE
+#define TOUCAN_WIN_MODE
 
 / {
     chosen {
@@ -95,6 +96,54 @@
     };
 };
 
+#ifdef TOUCAN_WIN_MODE
+/ {
+    behaviors {
+        // Scroll exactly one wheel step per tap: a 1-tick (16 ms) move at 70 units/s
+        // gives 1.12, truncated to 1. The tap is released before the second tick.
+        msc_zoom: msc_zoom {
+            compatible = "zmk,behavior-input-two-axis";
+            #binding-cells = <1>;
+            x-input-code = <INPUT_REL_HWHEEL>;
+            y-input-code = <INPUT_REL_WHEEL>;
+            trigger-period-ms = <16>;
+            time-to-max-speed-ms = <0>;
+            acceleration-exponent = <0>;
+        };
+
+        zoom_in_macro: zoom_in_macro {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            wait-ms = <5>;
+            tap-ms = <24>;
+            bindings
+                = <&macro_press &kp LCTRL>
+                , <&macro_tap &msc_zoom MOVE_Y(-70)>
+                , <&macro_release &kp LCTRL>
+                ;
+        };
+
+        zoom_out_macro: zoom_out_macro {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            wait-ms = <5>;
+            tap-ms = <24>;
+            bindings
+                = <&macro_press &kp LCTRL>
+                , <&macro_tap &msc_zoom MOVE_Y(70)>
+                , <&macro_release &kp LCTRL>
+                ;
+        };
+    };
+
+    msc_zoom_input_listener: msc_zoom_input_listener {
+        compatible = "zmk,input-listener";
+        status = "disabled";
+        device = <&msc_zoom>;
+    };
+};
+#endif
+
 / {
     input_processors {
         zip_zoom_mapper: zip_zoom_mapper {
@@ -103,7 +152,8 @@
             event-code = <INPUT_REL_MISC>;
             sensitivity = <10>;
 #ifdef TOUCAN_WIN_MODE
-            bindings = <&kp LC(MINUS)>, <&kp LC(EQUAL)>;
+            // Ctrl + one wheel step: zooms the same on every host keyboard layout
+            bindings = <&zoom_out_macro>, <&zoom_in_macro>;
 #else
             bindings = <&kp LG(MINUS)>, <&kp LG(EQUAL)>;
 #endif

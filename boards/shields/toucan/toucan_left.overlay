@@ -47,6 +47,12 @@ nice_view_spi: &spi0 {
     status = "okay";
 };
 
+#ifdef TOUCAN_WIN_MODE
+&msc_zoom_input_listener {
+    status = "okay";
+};
+#endif
+
 &zip_zoom_mapper {
     status = "okay";
 };
